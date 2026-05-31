@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BodhiBot-ChatBot</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <nav class="navbar">
+        <div class="logo-name">
+          <img
+            src="{{ url_for('static', filename='images/logo.png') }}"
+            alt=""
+          />
+          <h3>BodhiBot</h3>
+        </div>
+        <div class="right-section">
+          <button class="new-chat-btn">
+            <i class="fa-solid fa-plus"></i>
+            New Chat
+          </button>
+          <i class="fa-solid fa-magnifying-glass icon"></i>
+
+          <i class="fa-regular fa-bell icon"></i>
+
+          <div class="right-section">
+            <button class="login-btn">Login</button>
+
+            <button class="signup-btn">Signup</button>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main class="main-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <button class="sidebar-new-chat">
+          <i class="fa-solid fa-plus"></i>
+          New Chat
+        </button>
+
+        <div class="chat-history">
+          <div class="chat-item">
+            <span>Python Help</span>
+            <i class="fa-solid fa-trash"></i>
+          </div>
+
+          <div class="chat-item">
+            <span>DSA Questions</span>
+            <i class="fa-solid fa-trash"></i>
+          </div>
+
+          <div class="chat-item">
+            <span>SQL Queries</span>
+            <i class="fa-solid fa-trash"></i>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Chat Area -->
+      <section class="chat-section">
+        <div class="hero-section">
+          <img class="main-section-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="">
+          <h1>Hello, Welcome to BodhiBot</h1>
+          <p>Ask coding, AI, DSA, SQL or anything.</p>
+        </div>
+
+        <div class="chat-container">
+          <div class="bot-message">Hello! How can I help you today?</div>
+
+          <div class="user-message">Teach me Python</div>
+        </div>
+
+        <div class="input-section">
+          <input type="text" placeholder="Ask anything..." />
+
+          <button class="button">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+      </section>
+    </main>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
