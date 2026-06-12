@@ -15,7 +15,7 @@
 
   <div class="login-container">
     
-    <form class="login-box">
+    <form class="login-box" method="post">
         <img class="logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="BodhiBot-logo">
       <h1>BodhiBot</h1>
 
@@ -24,12 +24,14 @@
       <input
         type="email"
         placeholder="Enter Email"
+        name="email"
         required
       />
 
       <input
         type="password"
         placeholder="Enter Password"
+        name="password"
         required
       />
 
@@ -39,7 +41,7 @@
 
       <p>
         Don't have an account?
-        <a href="#">Register</a>
+        <a href="{{ url_for('signup') }}">Register</a>
       </p>
 
     </form>
