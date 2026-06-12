@@ -38,9 +38,27 @@
           <i class="fa-regular fa-bell icon"></i>
 
           <div class="right-section">
-            <button class="login-btn">Login</button>
+            {% if session.get('user_id') %}
 
-            <button class="signup-btn">Signup</button>
+            <div class="profile-section">
+              <div class="profile-avatar">
+                {{ session['username'][0].upper() }}
+              </div>
+
+              <span> {{ session['username'].split()[0].title() }} </span>
+            </div>
+
+            {% else %}
+
+            <a href="{{ url_for('login') }}">
+              <button class="login-btn">Login</button>
+            </a>
+
+            <a href="{{ url_for('signup') }}">
+              <button class="signup-btn">Signup</button>
+            </a>
+
+            {% endif %}
           </div>
         </div>
       </nav>
@@ -74,7 +92,11 @@
       <!-- Chat Area -->
       <section class="chat-section">
         <div class="hero-section">
-          <img class="main-section-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="">
+          <img
+            class="main-section-logo"
+            src="{{ url_for('static', filename='images/logo.png') }}"
+            alt=""
+          />
           <h1>Hello, Welcome to BodhiBot</h1>
           <p>Ask coding, AI, DSA, SQL or anything.</p>
         </div>
