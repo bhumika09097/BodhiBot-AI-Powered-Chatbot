@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, url_for
 from groq import Groq
 from dotenv import load_dotenv
 import os
@@ -82,10 +82,63 @@ def signup():
 
     return render_template('signup.html')
 
+@app.route("/new_chat")
+def new_chat():
+
+    session.pop("messages", None)
+
+    if "user_id" in session:
+
+        conversation = Conversation(
+            user_id=session["user_id"]
+        )
+
+        db.session.add(conversation)
+        db.session.commit()
+
+        session["conversation_id"] = conversation.id
+
+    return redirect(url_for("home"))
+
+@app.route("/messages")
+def messages():
+    all_messages = Message.query.all()
+
+    result = []
+
+    for msg in all_messages:
+        result.append({
+            "id": msg.id,
+            "user_id": msg.user_id,
+            "role": msg.role,
+            "content": msg.content
+        })
+
+    return jsonify(result)
+
 @app.route("/chat", methods=["POST"])
 def chat():
 
+    if "messages" not in session:
+        session["messages"] = []
+
     user_message = request.json.get("message")
+
+    if "user_id" in session:
+
+        user_msg = Message(
+            user_id=session["user_id"],
+            role="user",
+            content=user_message
+        )
+
+        db.session.add(user_msg)
+        db.session.commit()
+
+    session["messages"].append({
+    "role": "user",
+    "content": user_message
+    })
 
     try:
 
@@ -93,18 +146,28 @@ def chat():
 
             model="llama-3.3-70b-versatile",
 
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_message
-                }
-            ],
+            messages=session["messages"],
 
             temperature=0.7,
             max_tokens=1024
         )
-
+        
         bot_reply = completion.choices[0].message.content
+
+        if "user_id" in session:
+            assistant_msg = Message(
+                user_id=session["user_id"],
+                role="assistant",
+                content=bot_reply
+            )
+
+            db.session.add(assistant_msg)
+            db.session.commit()
+
+        session["messages"].append({
+        "role": "assistant",
+        "content": bot_reply
+        })
 
     except Exception as e:
 
@@ -130,6 +193,30 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
 
     password = db.Column(db.String(200), nullable=False)
+
+class Conversation(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=False
+    )
+
+class Message(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=False
+    )
+
+    role = db.Column(db.String(20), nullable=False)
+
+    content = db.Column(db.Text, nullable=False)
 
 with app.app_context():
     db.create_all()
