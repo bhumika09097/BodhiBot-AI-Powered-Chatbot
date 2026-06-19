@@ -6,6 +6,15 @@ const chatContainer = document.querySelector(".chat-container");
 
 const hero = document.querySelector(".hero-section");
 
+document.getElementById("new-chat-btn").addEventListener("click", () => {
+    window.location.href = "/new_chat";
+});
+
+document
+  .getElementById("sidebar-new-chat-btn")
+  .addEventListener("click", () => {
+    window.location.href = "/new_chat";
+});
 
 sendBtn.addEventListener("click", () => {
     hero.style.display = "none";
@@ -118,3 +127,58 @@ inputField.addEventListener("keypress",(e)=>{
 /* SEND BUTTON */
 
 sendBtn.addEventListener("click", sendMessage);
+
+async function loadConversations(){
+
+    const response = await fetch("/conversations");
+
+    const conversations = await response.json();
+
+    const container = document.getElementById("conversation-list");
+
+    container.innerHTML = "";
+
+    conversations.forEach(chat => {
+
+        const div = document.createElement("div");
+
+        div.textContent = chat.title || `Chat ${chat.id}`;
+
+        div.classList.add("chat-item");
+
+        div.addEventListener("click", () => {
+            openConversation(chat.id);
+        });
+
+        container.appendChild(div);
+    });
+}
+
+loadConversations();
+
+async function openConversation(conversationId){
+
+    await fetch(`/set_conversation/${conversationId}`);
+    
+    const response = await fetch(
+        `/conversation/${conversationId}`
+    );
+
+    const messages = await response.json();
+
+    chatContainer.innerHTML = "";
+
+    hero.style.display = "none";
+
+    messages.forEach(msg => {
+
+        if(msg.role === "user"){
+            appendMessage(msg.content, "user-message");
+        }
+        else{
+            appendMessage(msg.content, "bot-message");
+        }
+    });
+
+    scrollToBottom();
+}
