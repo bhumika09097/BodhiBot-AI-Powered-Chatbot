@@ -22,6 +22,82 @@ client = Groq(
 def home():
     return render_template("index.html")
 
+@app.route("/chat", methods=["POST"])
+def chat():
+
+    if "messages" not in session:
+        session["messages"] = []
+
+    user_message = request.json.get("message")
+
+    if "user_id" in session and "conversation_id" not in session:
+        conversation = Conversation(
+            user_id=session["user_id"],
+            title=user_message[:50]
+        )
+
+        db.session.add(conversation)
+        db.session.commit()
+
+        session["conversation_id"] = conversation.id
+
+    if "user_id" in session:
+
+        user_msg = Message(
+            user_id=session["user_id"],
+            conversation_id=session["conversation_id"],
+            role="user",
+            content=user_message
+        )
+
+        db.session.add(user_msg)
+        db.session.commit()
+
+    session["messages"].append({
+    "role": "user",
+    "content": user_message
+    })
+
+    try:
+
+        completion = client.chat.completions.create(
+
+            model="llama-3.3-70b-versatile",
+
+            messages=session["messages"],
+
+            temperature=0.7,
+            max_tokens=1024
+        )
+        
+        bot_reply = completion.choices[0].message.content
+
+        if "user_id" in session:
+            assistant_msg = Message(
+                user_id=session["user_id"],
+                conversation_id=session['conversation_id'],
+                role="assistant",
+                content=bot_reply
+            )
+
+            db.session.add(assistant_msg)
+            db.session.commit()
+
+        session["messages"].append({
+        "role": "assistant",
+        "content": bot_reply
+        })
+
+    except Exception as e:
+
+        print(e)
+
+        bot_reply = "⚠️ BodhiBot is busy right now."
+
+    return jsonify({
+        "reply": bot_reply
+    })
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
@@ -86,17 +162,7 @@ def signup():
 def new_chat():
 
     session.pop("messages", None)
-
-    if "user_id" in session:
-
-        conversation = Conversation(
-            user_id=session["user_id"]
-        )
-
-        db.session.add(conversation)
-        db.session.commit()
-
-        session["conversation_id"] = conversation.id
+    session.pop("conversation_id", None)
 
     return redirect(url_for("home"))
 
@@ -116,68 +182,52 @@ def messages():
 
     return jsonify(result)
 
-@app.route("/chat", methods=["POST"])
-def chat():
+@app.route("/conversations")
+def conversations():
 
-    if "messages" not in session:
-        session["messages"] = []
+    if "user_id" not in session:
+        return jsonify([])
 
-    user_message = request.json.get("message")
+    chats = Conversation.query.filter_by(
+        user_id=session["user_id"]
+    ).order_by(Conversation.id.desc()).all()
 
-    if "user_id" in session:
+    result = []
 
-        user_msg = Message(
-            user_id=session["user_id"],
-            role="user",
-            content=user_message
-        )
-
-        db.session.add(user_msg)
-        db.session.commit()
-
-    session["messages"].append({
-    "role": "user",
-    "content": user_message
-    })
-
-    try:
-
-        completion = client.chat.completions.create(
-
-            model="llama-3.3-70b-versatile",
-
-            messages=session["messages"],
-
-            temperature=0.7,
-            max_tokens=1024
-        )
-        
-        bot_reply = completion.choices[0].message.content
-
-        if "user_id" in session:
-            assistant_msg = Message(
-                user_id=session["user_id"],
-                role="assistant",
-                content=bot_reply
-            )
-
-            db.session.add(assistant_msg)
-            db.session.commit()
-
-        session["messages"].append({
-        "role": "assistant",
-        "content": bot_reply
+    for chat in chats:
+        result.append({
+            "id": chat.id,
+            "title": chat.title
         })
 
-    except Exception as e:
+    return jsonify(result)
 
-        print(e)
+@app.route("/conversation/<int:conversation_id>")
+def get_conversation(conversation_id):
 
-        bot_reply = "⚠️ BodhiBot is busy right now."
+    if "user_id" not in session:
+        return jsonify([])
 
-    return jsonify({
-        "reply": bot_reply
-    })
+    messages = Message.query.filter_by(
+        conversation_id=conversation_id
+    ).all()
+
+    result = []
+
+    for msg in messages:
+        result.append({
+            "role": msg.role,
+            "content": msg.content
+        })
+
+    return jsonify(result)
+
+@app.route("/set_conversation/<int:conversation_id>")
+def set_conversation(conversation_id):
+
+    session["conversation_id"] = conversation_id
+
+    return jsonify({"success": True})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -203,7 +253,10 @@ class Conversation(db.Model):
         db.ForeignKey('user.id'),
         nullable=False
     )
-
+    title = db.Column(
+        db.String(200),
+        nullable=True
+    )
 class Message(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
@@ -211,6 +264,12 @@ class Message(db.Model):
     user_id = db.Column(
         db.Integer,
         db.ForeignKey('user.id'),
+        nullable=False
+    )
+    
+    conversation_id = db.Column(
+        db.Integer,
+        db.ForeignKey('conversation.id'),
         nullable=False
     )
 
