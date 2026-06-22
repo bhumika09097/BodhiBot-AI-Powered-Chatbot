@@ -229,6 +229,11 @@ def set_conversation(conversation_id):
 
     return jsonify({"success": True})
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("home"))
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
